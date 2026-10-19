@@ -10,6 +10,9 @@ const app = new App({
 
 const nasaApi = process.env.NASA_API_KEY;
 
+const currentTime = Math.floor(Date.now() / 1000);
+const currTimeString = `<!date^${currentTime}^{time}|${new Date().toISOString()}>`;
+
 app.command("/epicslackbot-ping", async ({ command, ack, respond }) => {
   const start = Date.now();
   await ack();
@@ -25,7 +28,14 @@ app.command("/epicslackbot-help", async ({ ack, respond }) => {
 /epicslackbot-ping - Check bot latency
 /epicslackbot-apod - View today's NASA Astronomy Picture of the Day
 /epicslackbot-joke - a joke. lol
-/epicslackbot-help - View this menu again with the list of commands`
+/epicslackbot-help - View this menu again with the list of commands
+/epicslackbot-weather - View the weather for your city. Make sure you enter your city name
+/epicslackbot-spacenews - View upcoming launches and exciting space events
+/epicslackbot-calc - Calculate any two numbers with one operator, make sure to include angle bracket around the numbers. Example: /epicslackbot-calc <2>*<2>
+/epicslackbot-flip - Flip a coin!
+/epicslackbot-roll - Roll any sided dice, simply type a number after the command. Example: /epicslackbot-roll 6 
+
+Important Info: APOD and Weather commands may take a while to load and present the information, please be patient.`
   });
 });
 app.command("/epicslackbot-joke", async ({ ack, respond }) => {
@@ -44,6 +54,86 @@ ${response.data.punchline}`
   }
 });
 
+
+
+// app.command("/epicslackbot-apod", async ({ ack, command, client }) => {
+//   await ack();
+
+//   try {
+//     console.log("Fetching NASA APOD...");
+
+//     const response = await axios.get(
+//       "https://science.nasa.gov/wp-json/wp/v2/apod-basic/",
+//       { params: { api_key: nasaApi } }
+//     );
+
+//     console.log("NASA response status:", response.status);
+//     console.log("NASA response data:", response.data);
+
+//     const data = Array.isArray(response.data)
+//       ? response.data[0]
+//       : response.data;
+
+//     if (!data) {
+//       throw new Error("NASA returned no APOD data.");
+//     }
+
+//     const title = data.title || "NASA APOD";
+//     const explanation = (data.explanation || "No explanation available.")
+//       .replace(/<[^>]*>/g, "");
+
+//     const blocks = [
+//       {
+//         type: "header",
+//         text: {
+//           type: "plain_text",
+//           text: `NASA APOD: ${title}`
+//         }
+//       },
+//       {
+//         type: "section",
+//         text: {
+//           type: "mrkdwn",
+//           text: explanation
+//         }
+//       }
+//     ];
+
+//     const imageUrl = data.hdurl || data.url;
+
+//     if (data.media_type === "image" && imageUrl) {
+//       blocks.push({
+//         type: "image",
+//         image_url: imageUrl,
+//         alt_text: title
+//       });
+//     } else if (data.url) {
+//       blocks.push({
+//         type: "section",
+//         text: {
+//           type: "mrkdwn",
+//           text: `<${data.url}|View NASA media>`
+//         }
+//       });
+//     }
+
+//     await client.chat.postMessage({
+//       channel: command.channel_id,
+//       text: `NASA APOD: ${title}`,
+//       blocks
+//     });
+
+//     console.log("APOD message sent successfully.");
+
+//   } catch (err) {
+//     console.error(
+//       "APOD error:",
+//       err.data || err.response?.data || err.message
+//     );
+//   }
+// });
+
+
 app.command("/epicslackbot-apod", async ({ ack, respond }) => {
   await ack();
 
@@ -57,16 +147,16 @@ app.command("/epicslackbot-apod", async ({ ack, respond }) => {
     const explanationB = data.explanation.replace(/<[^>]*>/g, '');
 
     if (data.media_type !== "image"){
-      return await respond({
-        text: `Today's NASA Astronomy Picture of the Day ${data.title}\n${data.hdurl}\n\n${data.explanation}`
-      });
+      await respond({
+        text: `Today's NASA Astronomy Picture of the day: ${data.title}\n Today's APOD is a video, click the link below to view it: \n${data.url}\n\n${explanationB}`
+      })
     }
 
     // await respond({
     //   text: `Today's NASA Astronomy Picture of the Day: ${data.title}\n${data.hdurl}\n\n${data.explanation}`
     // });
-
-    await respond({
+    else{
+      await respond({
       blocks: [
         {
           type: "header",
@@ -91,8 +181,11 @@ app.command("/epicslackbot-apod", async ({ ack, respond }) => {
       ],
       text: `Today's NASA Astronomy Picture of the Day: ${data.title}` 
     });
+    }
+    
 
   } catch (err) {
+    console.error("APOD error:", err.response?.status, err.response?.data || err.message);
     await respond({text: "Failed to fetch APOD." });
   }
 });
@@ -251,33 +344,22 @@ app.view("user_input_modal", async ({ ack, view, client }) => {
     const perceptprob = weatherData.daily.precipitation_probability_max[0];
     const perceptprobtmr = weatherData.daily.precipitation_probability_max[1];
     const rainsum = weatherData.daily.precipitation_sum[0];
-    // let day = "";
-    // let dayhigh = 0;
-    // const codeb = weatherData.current.weather_code;
-    // const isDay = weatherData.current.is_day;
-    // const iconb = weatherIcon(codeb, isDay);
-    // const localTime = new Date().toLocaleTimeString("en-US", {
-    //   timeZone: weatherData.timezone,
-    //   hour: "numeric",
-    //   minute: "2-digit",
-    //   hour12: true
-    // });
   await client.chat.postMessage({
     channel: channelId, //Basically tells the bot which channel you should message in
     text: 
     `
-    Weather Brief - ${city}
-    
-    Current Temperature: ${temperature} °F
-    Today's High: ${high} °F
-    Today's Low: ${low} °F
+Weather Brief - ${city}
 
-    Chance of Precipitation: ${perceptprob}
-    Chance of Precipiation Tomorrow: ${perceptprobtmr}
-    
-    Windspeed: ${windspeed}
-    Sunrise: ${sunrise}
-    Sunset: ${sunset}
+Current Temperature: ${temperature} °F
+Today's High: ${high} °F
+Today's Low: ${low} °F
+
+Chance of Precipitation: ${perceptprob} %
+Chance of Precipiation Tomorrow: ${perceptprobtmr} %
+
+Windspeed: ${windspeed}
+Sunrise: ${sunrise}
+Sunset: ${sunset}
     `
 
   });
@@ -286,17 +368,139 @@ app.view("user_input_modal", async ({ ack, view, client }) => {
   }
 });
 
-app.command("/epicslackbot-martianweather", async ({ ack, respond }) => {
+app.command("/epicslackbot-spacenews", async ({ command, ack, respond }) => {
   await ack();
-  await respond({
-    text:
-`Available Commands:
-/epicslackbot-ping - Check bot latency
-/epicslackbot-apod - View today's NASA Astronomy Picture of the Day
-/epicslackbot-joke - a joke. lol
-/epicslackbot-help - View this menu again with the list of commands`
-  });
+  
+
+
+  try {
+    const launchResponse = await axios.get("https://lldev.thespacedevs.com/2.3.0/launches/upcoming/?limit=3");
+    const launchData = launchResponse.data.results;
+    const eventResponse = await axios.get("https://ll.thespacedevs.com/2.3.0/events/upcoming/?limit=3");
+    const eventData = eventResponse.data.results;
+
+    //Map through the objects and extract the readable fields
+    const formattedLaunches = launchData.map(launch => {
+    launch.net = new Date(launch.net)
+    const padName = launch.pad ? launch.pad.name : "Unknown Pad";
+    
+    return `🚀 *${launch.name}* \nLaunch Pad: ${padName}\n📅 Date: ${launch.net}\nℹ️ Status: ${launch.status.name}\n`;
+  }).join("\n"); //join them at each \n
+
+    const formattedEvents = eventData.map(events => {
+      events.date = new Date(events.date)
+      return `🚀 *${events.name}*\n📅 Date: ${events.date}\n`;
+    }).join("\n"); //join them at each \n
+    await respond({
+      text: 
+`*Upcoming Launches*: \n
+${formattedLaunches}\n\n 
+*Events*: \n
+${formattedEvents}`
+    })
+  } catch (err) {
+    console.error("Failed to show space news:", err);
+  }
 });
+
+app.command("/epicslackbot-reminder", async ({ command, ack, respond }) => {
+  await ack();
+
+
+
+  try {
+    const userParam = command.text ? command.text.trim() : ''; // Strip the text written after typing out the command
+
+    if (!userParam) {
+      await respond({
+        text: "You didn't provide any text."     
+      });
+      return;
+    }
+
+    const cleanParam = userParam.replace(/^<|>/g, '');
+
+    
+    const currentTime = Math.floor(Date.now() / 1000);
+    const currTimeString = `<!date^${currentTime}^{time}|${new Date().toISOString()}>`;
+    await respond({
+      text: `Typed: ${cleanParam}
+      Time: ${currTimeString}`
+    });
+    
+  } catch (err) {
+    console.error("Failed to show space news:", err);
+  }
+});
+
+app.command("/epicslackbot-calc", async ({ command, ack, respond}) => {
+  await ack();
+  const mult = "*";
+  const div = "/";
+  const add = "+";
+  const sub = "-";
+  const exp = "^";
+  let result = 0;
+  try{
+    const calcParam = command.text ? command.text.trim() : '';
+    // const calcCleanParam = calcParam.replace(/^<|>/g, '');
+    const matches = calcParam.match(/<([^>]+)>/g);
+
+    const num1 = matches[0].replace(/[<>]/g, '');
+    const num2 = matches[1].replace(/[<>]/g, '');
+
+    if (calcParam.includes(mult)){
+      result = num1*num2;
+    } else if (calcParam.includes(div)){
+      result = num1/num2;
+    } else if (calcParam.includes(add)){
+      result = num1+num2;
+    } else if (calcParam.includes(sub)){
+      result = num1-num2;
+    } else if (calcParam.includes(exp)){
+      result = num1 ** num2;
+    }
+
+    await respond ({
+      text: `Result: ${result}`
+    });
+    
+  } catch (err) {
+    console.error("Failed to get a result");
+  }
+});
+
+app.command("/epicslackbot-roll", async ({ command, ack, respond}) => {
+  await ack();
+  
+  try{
+    const numInput = command.text ? command.text.trim() : '';
+    const fNumInput = numInput.replace(/^<|>/g, '');
+    const rollNum = Math.floor(Math.random() * (Number(fNumInput)) + 1)
+    
+    await respond ({
+      text: `Rolling a Dice!\n\n*Result: ${rollNum}*`
+    });
+    
+  } catch (err) {
+    console.error("Failed to get a result");
+  }
+});
+
+app.command("/epicslackbot-flip", async ({ command, ack, respond}) => {
+  await ack();
+  
+  try{
+    const result = Math.random() <= 0.5 ? 'Heads' : 'Tails';
+    await respond ({
+      text: `Flipping a coin!\nResult: ${result}`
+    });
+    
+  } catch (err) {
+    console.error("Failed to get a result");
+  }
+});
+
 
 (async () => {
   await app.start();
