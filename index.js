@@ -344,22 +344,26 @@ app.view("user_input_modal", async ({ ack, view, client }) => {
     const perceptprob = weatherData.daily.precipitation_probability_max[0];
     const perceptprobtmr = weatherData.daily.precipitation_probability_max[1];
     const rainsum = weatherData.daily.precipitation_sum[0];
+
+    const tempC = Math.round((temperature - 32) * (5/9));
+    const highC = Math.round((high - 32) * (5/9));
+    const lowC = Math.round((low - 32) * (5/9));
   await client.chat.postMessage({
     channel: channelId, //Basically tells the bot which channel you should message in
     text: 
     `
-Weather Brief - ${city}
+*Weather Brief - ${city}*
 
-Current Temperature: ${temperature} °F
-Today's High: ${high} °F
-Today's Low: ${low} °F
+*Current Temperature:* ${temperature}°F (${tempC}°C)
+*Today's High:* ${high}°F (${highC}°C)
+*Today's Low:* ${low}°F (${lowC}°C)
 
-Chance of Precipitation: ${perceptprob} %
-Chance of Precipiation Tomorrow: ${perceptprobtmr} %
+*Chance of Precipitation:* ${perceptprob}%
+*Chance of Precipiation Tomorrow:* ${perceptprobtmr}%
 
-Windspeed: ${windspeed}
-Sunrise: ${sunrise}
-Sunset: ${sunset}
+*Windspeed:* ${windspeed} mph
+*Sunrise:* ${sunrise}
+*Sunset:* ${sunset} 
     `
 
   });
@@ -444,6 +448,7 @@ app.command("/epicslackbot-calc", async ({ command, ack, respond}) => {
   try{
     const calcParam = command.text ? command.text.trim() : '';
     // const calcCleanParam = calcParam.replace(/^<|>/g, '');
+    const equation = calcParam.replace(/<|>/g, '');
     const matches = calcParam.match(/<([^>]+)>/g);
 
     const num1 = matches[0].replace(/[<>]/g, '');
@@ -462,7 +467,9 @@ app.command("/epicslackbot-calc", async ({ command, ack, respond}) => {
     }
 
     await respond ({
-      text: `Result: ${result}`
+      text: 
+`${equation}
+Result: ${result}`
     });
     
   } catch (err) {
@@ -479,7 +486,7 @@ app.command("/epicslackbot-roll", async ({ command, ack, respond}) => {
     const rollNum = Math.floor(Math.random() * (Number(fNumInput)) + 1)
     
     await respond ({
-      text: `Rolling a Dice!\n\n*Result: ${rollNum}*`
+      text: `Rolling a ${fNumInput}-sided dice!\n\n*Result: ${rollNum}*`
     });
     
   } catch (err) {
