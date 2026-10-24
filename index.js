@@ -13,11 +13,12 @@ const nasaApi = process.env.NASA_API_KEY;
 const currentTime = Math.floor(Date.now() / 1000);
 const currTimeString = `<!date^${currentTime}^{time}|${new Date().toISOString()}>`;
 
+//Create a new command with this structure:
 app.command("/epicslackbot-ping", async ({ command, ack, respond }) => {
   const start = Date.now();
-  await ack();
+  await ack(); // Make sure you add this at the beginning
   const latency = Date.now() - start;
-  await respond({ text: `Pong!\nLatency: ${latency}ms` });
+  await respond({ text: `Pong!\nLatency: ${latency}ms` }); //Use await respond to add text and output
 });
 
 app.command("/epicslackbot-help", async ({ ack, respond }) => {
@@ -35,14 +36,16 @@ app.command("/epicslackbot-help", async ({ ack, respond }) => {
 /epicslackbot-flip - Flip a coin!
 /epicslackbot-roll - Roll any sided dice, simply type a number after the command. Example: /epicslackbot-roll 6 
 
-Important Info: APOD and Weather commands may take a while to load and present the information, please be patient.`
+Important Info: APOD and Weather commands may take a while to load, please be patient.`
   });
 });
 app.command("/epicslackbot-joke", async ({ ack, respond }) => {
   await ack();
 
+  //Use try and catch for your logic stuff to check for errors
   try {
-    const response = await axios.get("https://official-joke-api.appspot.com/random_joke");
+    // This is the main format for call APIs, make sure to use await axios.get
+    const response = await axios.get("https://official-joke-api.appspot.com/random_joke"); 
     await respond({
       text:
 `${response.data.setup}
@@ -144,7 +147,7 @@ app.command("/epicslackbot-apod", async ({ ack, respond }) => {
     //const response = await axios.get(`https://science.nasa.gov${nasaApi}`);
     const data = response.data && response.data[0] ? response.data[0] : null;
     
-    const explanationB = data.explanation.replace(/<[^>]*>/g, '');
+    const explanationB = data.explanation.replace(/<[^>]*>/g, ''); // removing the weird HTML formatting 
 
     if (data.media_type !== "image"){
       await respond({
@@ -155,6 +158,8 @@ app.command("/epicslackbot-apod", async ({ ack, respond }) => {
     // await respond({
     //   text: `Today's NASA Astronomy Picture of the Day: ${data.title}\n${data.hdurl}\n\n${data.explanation}`
     // });
+
+    // This is a thing called Slack Blocks, search it up for the proper formatting depending on your use case
     else{
       await respond({
       blocks: [
@@ -191,69 +196,6 @@ app.command("/epicslackbot-apod", async ({ ack, respond }) => {
 });
 
 
-// app.command("/epicslackbot-weather", async ({ ack, respond }) => {
-//   await ack();
-//   // const weatherUrl =
-//   //       `https://api.open-meteo.com/v1/forecast?` +
-//   //       `latitude=${lat}` +
-//   //       `&longitude=${lon}` +
-//   //       `&current=temperature_2m,wind_speed_10m,is_day,wind_direction_10m,precipitation,rain,showers,snowfall,cloud_cover,weather_code` +
-//   //       `&temperature_unit=fahrenheit` +
-//   //       `&wind_speed_unit=mph` +
-//   //       `&timezone=auto` +
-//   //       `&daily=sunrise,sunset,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,weather_code` +
-//   //       `&models=ecmwf_ifs`;
-//   try {
-//     const response = await axios.get(`${weatherUrl}`);
-//     const result = await client.view.open({
-//       trigger_id: isRawBodyError.trigger_id,
-//       view: {
-//         type: 'modal',
-//         callback_id: 'modal-identifier',
-//         title: {
-//           type: 'plain_text',
-//           text: "User Input request"
-//         },
-//         blocks: [
-//           {
-//             type: 'input',
-//             block_id: 'input_block_1',
-//             element: {
-//               type: 'plain_text_input',
-//               action_id: 'plain_text_input-action',
-//               placeholder: {
-//                 type: 'plain_text',
-//                 text: 'Enter your city...'
-//               }
-//             },
-//             label: {
-//               type: 'plain_text',
-//               text: 'Please enter your city...'
-//             }
-//           }
-//         ],
-//         submit: {
-//           type: 'plain_text',
-//           text: 'Submit'
-//         }
-//       }
-//     });
-//   } catch (err) {
-//     await respond({text: "Failed to get input"});
-//   }
-// });
-// app.view('user_input_modal', async ({ack, body, view, client }) => {
-//   await ack();
-
-//   const userInput = view.state.values.feedback_block.feedback_input.value;
-//   const userWhoSubmitted = body.user.id;
-  
-//   await respond({
-//     text: 
-//     `User input: ${userInput}`
-//   });
-
-// });
 
 app.command("/epicslackbot-weather", async ({ command, ack, client }) => {
   await ack();
@@ -354,14 +296,14 @@ app.view("user_input_modal", async ({ ack, view, client }) => {
     `
 *Weather Brief - ${city}*
 
-*Current Temperature:* ${temperature}°F (${tempC}°C)
+*🌡️Current Temperature:* ${temperature}°F (${tempC}°C)
 *Today's High:* ${high}°F (${highC}°C)
 *Today's Low:* ${low}°F (${lowC}°C)
 
-*Chance of Precipitation:* ${perceptprob}%
+*🌧️Chance of Precipitation:* ${perceptprob}%
 *Chance of Precipiation Tomorrow:* ${perceptprobtmr}%
 
-*Windspeed:* ${windspeed} mph
+*💨Windspeed:* ${windspeed} mph
 *Sunrise:* ${sunrise}
 *Sunset:* ${sunset} 
     `
@@ -375,8 +317,6 @@ app.view("user_input_modal", async ({ ack, view, client }) => {
 app.command("/epicslackbot-spacenews", async ({ command, ack, respond }) => {
   await ack();
   
-
-
   try {
     const launchResponse = await axios.get("https://lldev.thespacedevs.com/2.3.0/launches/upcoming/?limit=3");
     const launchData = launchResponse.data.results;
@@ -389,7 +329,7 @@ app.command("/epicslackbot-spacenews", async ({ command, ack, respond }) => {
     const padName = launch.pad ? launch.pad.name : "Unknown Pad";
     
     return `🚀 *${launch.name}* \nLaunch Pad: ${padName}\n📅 Date: ${launch.net}\nℹ️ Status: ${launch.status.name}\n`;
-  }).join("\n"); //join them at each \n
+    }).join("\n"); //join them at each \n
 
     const formattedEvents = eventData.map(events => {
       events.date = new Date(events.date)
@@ -407,6 +347,8 @@ ${formattedEvents}`
   }
 });
 
+
+//Most likely not going to use this.
 app.command("/epicslackbot-reminder", async ({ command, ack, respond }) => {
   await ack();
 
@@ -421,15 +363,22 @@ app.command("/epicslackbot-reminder", async ({ command, ack, respond }) => {
       });
       return;
     }
-
-    const cleanParam = userParam.replace(/^<|>/g, '');
-
+    let remind= "";
+    const cleanTimeParam = userParam.replace(/^<|>/g, '');
+    
     
     const currentTime = Math.floor(Date.now() / 1000);
+
+    if (currentTime === cleanParam){
+      remind = `Here is your reminder for ${cleanTimeParam}`;
+      text: `${remind}`;
+    }
+
     const currTimeString = `<!date^${currentTime}^{time}|${new Date().toISOString()}>`;
     await respond({
       text: `Typed: ${cleanParam}
       Time: ${currTimeString}`
+
     });
     
   } catch (err) {
@@ -439,25 +388,35 @@ app.command("/epicslackbot-reminder", async ({ command, ack, respond }) => {
 
 app.command("/epicslackbot-calc", async ({ command, ack, respond}) => {
   await ack();
+
+  //Set variables for each operator
   const mult = "*";
   const div = "/";
   const add = "+";
   const sub = "-";
   const exp = "^";
   let result = 0;
+
   try{
-    const calcParam = command.text ? command.text.trim() : '';
+    const calcParam = command.text ? command.text.trim() : ''; // Removes all text after typing the command
     // const calcCleanParam = calcParam.replace(/^<|>/g, '');
     const equation = calcParam.replace(/<|>/g, '');
-    const matches = calcParam.match(/<([^>]+)>/g);
+    const matches = calcParam.match(/<([^>]+)>/g); //Takes the numbers that are in between the numbers
 
     const num1 = matches[0].replace(/[<>]/g, '');
     const num2 = matches[1].replace(/[<>]/g, '');
 
+    // Does the correct operation according to the input provided
     if (calcParam.includes(mult)){
       result = num1*num2;
     } else if (calcParam.includes(div)){
-      result = num1/num2;
+      // Check for dividing by 0, because that doesn't work. 
+      if (num2 === 0){
+        result = "Error: Can't divide by 0";
+      }
+      else {
+        result = num1/num2;
+      }
     } else if (calcParam.includes(add)){
       result = num1+num2;
     } else if (calcParam.includes(sub)){
@@ -506,6 +465,93 @@ app.command("/epicslackbot-flip", async ({ command, ack, respond}) => {
   } catch (err) {
     console.error("Failed to get a result");
   }
+});
+
+app.command("/epicslackbot-trivia", async ({ command, ack, respond}) =>{
+  await ack();
+  // const triviaResponse = await axios.get("https://opentdb.com/api.php?amount=1&difficulty=easy");
+  const triviaResponse = await axios.get("https://the-trivia-api.com/v2/questions?difficulties=easy&limit=1");
+  const triviaData = triviaResponse.data;
+  try{
+    const formattedTrivia = triviaData.map((trivia) => {
+      const triviaQ = trivia.question.text;
+      const correctAns = trivia.correctAnswer;
+      const incorrectAns = trivia.incorrectAnswers;
+      let allAns = [...trivia.incorrectAnswers, correctAns];
+
+      // Shuffling the answer choices using the Fisher-Yates shuffle - search it up
+      for (let i = allAns.length - 1; i > 0; i--){ // Use a for loop to iterate through the array 
+        const j = Math.floor(Math.random() * (i + 1)); // Choose a random index from 0 to i
+
+        [allAns[i], allAns[j]] = [allAns[j], allAns[i]]; // Swaps the values of j and i
+        // let randomChoice = allAns[Math.floor(Math.random() * allAns.length())];
+      }
+
+      
+
+      const incorrect1 = trivia.incorrectAnswers[0];
+      const incorrect2 = trivia.incorrectAnswers[1];
+      const incorrect3 = trivia.incorrectAnswers[2];
+      return {
+        testText: `${triviaQ}\n${correctAns}\n ${incorrect1}\n ${incorrect2}\n ${incorrect3}`,
+        question: `${triviaQ}`,
+        options: allAns
+      };
+      
+
+    });
+    
+    const allOptions = formattedTrivia[0].options;
+    const option1 = allOptions[0];
+    const option2 = allOptions[1];
+    const option3 = allOptions[2];
+    const option4 = allOptions[3];
+    await respond({
+      
+      blocks: [
+        {
+          "type": "section",
+          "text": {
+            "type": "mrkdwn",
+            "text": `Question: ${formattedTrivia[0].question}`
+          }
+        },
+        {
+          "type": "actions",
+          "elements": [
+            {
+              "type": "button",
+              "text": {
+                "type": "plain_text",
+                "text": `${option1}`
+              },
+              "style": "primary",
+              "action_id": "approve_click", // Unique identifier
+              "value": "item_123"           // Contextual data passed to your backend
+            },
+            {
+              "type": "button",
+              "text": {
+                "type": "plain_text",
+                "text": `${option2}`
+              },
+              "style": "primary",
+              "action_id": `option`,    // Unique identifier
+              "value": "item_123"
+            }
+          ]
+        }
+      ]
+      
+    });
+
+
+
+  } catch (err){
+    console.log("Not working");
+  }
+    
+  
 });
 
 
