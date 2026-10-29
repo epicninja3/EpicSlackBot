@@ -26,15 +26,16 @@ app.command("/epicslackbot-help", async ({ ack, respond }) => {
   await respond({
     text:
 `Available Commands:
+/epicslackbot-help - View this menu again with the list of commands
 /epicslackbot-ping - Check bot latency
 /epicslackbot-apod - View today's NASA Astronomy Picture of the Day
-/epicslackbot-joke - a joke. lol
-/epicslackbot-help - View this menu again with the list of commands
+/epicslackbot-joke - a joke. 
 /epicslackbot-weather - View the weather for your city. Make sure you enter your city name
 /epicslackbot-spacenews - View upcoming launches and exciting space events
 /epicslackbot-calc - Calculate any two numbers with one operator, make sure to include angle bracket around the numbers. Example: /epicslackbot-calc <2>*<2>
 /epicslackbot-flip - Flip a coin!
 /epicslackbot-roll - Roll any sided dice, simply type a number after the command. Example: /epicslackbot-roll 6 
+/epicslackbot-trivia - Get quizzed on your trivia skills, click on one of the buttons to select an answer. 
 
 Important Info: APOD and Weather commands may take a while to load, please be patient.`
   });
@@ -348,43 +349,6 @@ ${formattedEvents}`
 });
 
 
-//Most likely not going to use this.
-app.command("/epicslackbot-reminder", async ({ command, ack, respond }) => {
-  await ack();
-
-
-
-  try {
-    const userParam = command.text ? command.text.trim() : ''; // Strip the text written after typing out the command
-
-    if (!userParam) {
-      await respond({
-        text: "You didn't provide any text."     
-      });
-      return;
-    }
-    let remind= "";
-    const cleanTimeParam = userParam.replace(/^<|>/g, '');
-    
-    
-    const currentTime = Math.floor(Date.now() / 1000);
-
-    if (currentTime === cleanParam){
-      remind = `Here is your reminder for ${cleanTimeParam}`;
-      text: `${remind}`;
-    }
-
-    const currTimeString = `<!date^${currentTime}^{time}|${new Date().toISOString()}>`;
-    await respond({
-      text: `Typed: ${cleanParam}
-      Time: ${currTimeString}`
-
-    });
-    
-  } catch (err) {
-    console.error("Failed to show space news:", err);
-  }
-});
 
 app.command("/epicslackbot-calc", async ({ command, ack, respond}) => {
   await ack();
@@ -418,7 +382,7 @@ app.command("/epicslackbot-calc", async ({ command, ack, respond}) => {
         result = num1/num2;
       }
     } else if (calcParam.includes(add)){
-      result = num1+num2;
+      result = Number(num1)+Number(num2);
     } else if (calcParam.includes(sub)){
       result = num1-num2;
     } else if (calcParam.includes(exp)){
@@ -476,7 +440,6 @@ app.command("/epicslackbot-trivia", async ({ command, ack, respond}) =>{
     const formattedTrivia = triviaData.map((trivia) => {
       const triviaQ = trivia.question.text;
       const correctAns = trivia.correctAnswer;
-      const incorrectAns = trivia.incorrectAnswers;
       let allAns = [...trivia.incorrectAnswers, correctAns];
 
       // Shuffling the answer choices using the Fisher-Yates shuffle - search it up
@@ -495,7 +458,8 @@ app.command("/epicslackbot-trivia", async ({ command, ack, respond}) =>{
       return {
         testText: `${triviaQ}\n${correctAns}\n ${incorrect1}\n ${incorrect2}\n ${incorrect3}`,
         question: `${triviaQ}`,
-        options: allAns
+        options: allAns,
+        correctAns: correctAns
       };
       
 
@@ -506,6 +470,14 @@ app.command("/epicslackbot-trivia", async ({ command, ack, respond}) =>{
     const option2 = allOptions[1];
     const option3 = allOptions[2];
     const option4 = allOptions[3];
+
+    // Use globalThis. to create a global variable, make sure to call that variable as globalThis.var name
+    globalThis.correctAnswer = formattedTrivia[0].correctAns;
+    globalThis.trivQuestion = formattedTrivia[0].question;
+    globalThis.option1 = option1;
+    globalThis.option2 = option2;
+    globalThis.option3 = option3;
+    globalThis.option4 = option4;
     await respond({
       
       blocks: [
@@ -526,8 +498,8 @@ app.command("/epicslackbot-trivia", async ({ command, ack, respond}) =>{
                 "text": `${option1}`
               },
               "style": "primary",
-              "action_id": "approve_click", // Unique identifier
-              "value": "item_123"           // Contextual data passed to your backend
+              "action_id": "option-1",
+              "value": "item_123"
             },
             {
               "type": "button",
@@ -536,22 +508,88 @@ app.command("/epicslackbot-trivia", async ({ command, ack, respond}) =>{
                 "text": `${option2}`
               },
               "style": "primary",
-              "action_id": `option`,    // Unique identifier
+              "action_id": "option-2", 
+              "value": "item_123"
+            },
+            {
+              "type": "button",
+              "text": {
+                "type": "plain_text",
+                "text": `${option3}`
+              },
+              "style": "primary",
+              "action_id": "option-3", 
+              "value": "item_123"
+            },
+            {
+              "type": "button",
+              "text": {
+                "type": "plain_text",
+                "text": `${option4}`
+              },
+              "style": "primary",
+              "action_id": "option-4", 
               "value": "item_123"
             }
           ]
         }
       ]
-      
     });
 
-
-
   } catch (err){
-    console.log("Not working");
+    console.log(`${err}`);
   }
-    
-  
+});
+
+//Regex Matcher stuff, enclose what you are looking for in /^.../. It checks if the text begins with "option-" and then \d+ is one or more digits like 1,2,3,10
+// This function works if you click any of the 4 buttons. 
+app.action(/^option-\d+$/, async ({ ack, body, action, respond }) => { 
+  await ack();
+
+  let triviaResult
+  const clickedId = action.action_id; // Grabs the ID of the clicked button
+
+  try{
+    // Checks to see which button was clicked and if that option was correct. 
+    if (clickedId === "option-1"){
+      if (globalThis.correctAnswer === globalThis.option1){
+        triviaResult = "Correct! Good work!"
+
+      } else{
+        triviaResult = `Not quite. The correct answer was ${globalThis.correctAnswer}`
+      }
+    }
+    else if (clickedId === "option-2"){
+      if (globalThis.correctAnswer === globalThis.option2){
+        triviaResult = "Correct! Good work!"
+
+      } else{
+        triviaResult = `Not quite. The correct answer was ${globalThis.correctAnswer}`
+      }
+    }
+    else if (clickedId === "option-3"){
+      if (globalThis.correctAnswer === globalThis.option3){
+        triviaResult = "Correct! Good work!"
+
+      } else{
+        triviaResult = `Not quite. The correct answer was ${globalThis.correctAnswer}`
+      }
+    }
+    else if (clickedId === "option-4"){
+      if (globalThis.correctAnswer === globalThis.option4){
+        triviaResult = "Correct! Good work!"
+
+      } else{
+        triviaResult = `Not quite. The correct answer was ${globalThis.correctAnswer}`
+      }
+    }
+
+  }catch (err){
+    console.log(`Error: ${err}`)
+  }
+  await respond({
+    text: `Question: ${globalThis.trivQuestion}\n${triviaResult}`
+  });
 });
 
 
